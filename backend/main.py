@@ -50,26 +50,32 @@ file_cache: dict = {}
 CACHE_TIMEOUT = 5  # 秒単位
 
 @app.get("/view_file")
-async def view_file(file_path: str, depth: int = 1):
+async def view_file(file_path: str, depth: int = 1, extensions: str = ""):
     """
     指定パスがディレクトリの場合、その中身を depth 階層まで取得する。
     ファイルの場合は、内容をテキストとして読み込み返す。
     キャッシュにより短時間の同一リクエストに対して高速応答します。
+
+    Args:
+        file_path (str): 対象のファイルまたはディレクトリのパス
+        depth (int, optional): ディレクトリの探索深さ. デフォルトは1
+        extensions (str, optional): プラス記号区切りの拡張子フィルタ (例: "txt+py"). デフォルトは空文字列（フィルタなし）
     """
+    print(f"view_file called - path: {file_path}, depth: {depth}, extensions: {extensions}")
     try:
         path = Path(file_path)
         if not path.exists():
             raise HTTPException(status_code=404, detail="パスが見つかりません")
 
         # キャッシュ確認
-        cache_key = f"{file_path}:{depth}"
+        cache_key = f"{file_path}:{depth}:{extensions}"
         if cache_key in file_cache:
             cache_time, cache_data = file_cache[cache_key]
             if time() - cache_time < CACHE_TIMEOUT:
                 return cache_data
 
         if path.is_dir():
-            items = await retrieve_files(path, depth)
+            items = await retrieve_files(path, depth, extensions)
             file_cache[cache_key] = (time(), items)
             return items
         else:
