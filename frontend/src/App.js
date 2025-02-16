@@ -5,6 +5,7 @@ import { SearchBar } from './components/SearchBar';
 import { FileList } from './components/FileList';
 import { FilterButtons } from './components/FilterButtons';
 import { DepthControl } from './components/DepthControl';
+import { PathInput } from './components/PathInput';
 import { FILTER_BUTTONS } from './constants/filterButtons';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
     files,
     handleFilterClick,
     handleItemClick,
+    handlePathChange,
     setDepth,
     setShowFolders,
     separateItems,
@@ -28,9 +30,7 @@ function App() {
   return (
     <Container>
       <Paper sx={{ margin: '10px', padding: '10px' }}>
-        <Typography variant="h6" gutterBottom>
-          現在のパス: {currentPath}
-        </Typography>
+        <PathInput currentPath={currentPath} onPathChange={handlePathChange} />
 
         <SearchBar onSearch={handleSearch} />
         <Divider sx={{ my: 2 }} />

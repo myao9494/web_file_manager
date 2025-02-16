@@ -24,6 +24,8 @@ from pydantic import BaseModel
 class FileInfo(BaseModel):
     name: str
     path: str
+    relative_path: str
+    depth: int
     is_dir: bool
     size: Optional[int] = None
     children_count: Optional[int] = None
@@ -89,14 +91,21 @@ def is_ignored(path: Path, project_root: Path) -> bool:
         return False
 
 @lru_cache(maxsize=1000)
-def get_file_info_cached(path_str: str) -> dict:
+def get_file_info_cached(path_str: str, project_root: Path, current_depth: int) -> dict:
     """
     ファイル情報の取得をディスクアクセスごとにキャッシュすることで高速化を図る。
     """
     p = Path(path_str)
+    try:
+        rel_path = str(p.relative_to(project_root))
+    except ValueError:
+        rel_path = p.name
+    
     info = {
         "name": p.name,
         "path": str(p),
+        "relative_path": rel_path,
+        "depth": current_depth,
         "is_dir": p.is_dir(),
         "size": os.path.getsize(p) if p.is_file() else None,
         "children_count": len(list(p.iterdir())) if p.is_dir() else None
@@ -133,7 +142,13 @@ async def process_item(item: Path, current_depth: int, max_depth: int, project_r
                 return []  # フィルタに合致しないなら空リストを返す
 
         loop = asyncio.get_running_loop()
-        info = await loop.run_in_executor(thread_pool, get_file_info_cached, str(item))
+        info = await loop.run_in_executor(
+            thread_pool, 
+            get_file_info_cached, 
+            str(item),
+            project_root,
+            current_depth
+        )
         file_info = FileInfo(**info)
         results.append(file_info)
 

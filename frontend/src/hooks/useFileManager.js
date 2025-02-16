@@ -91,6 +91,12 @@ export const useFileManager = () => {
     });
   }, [loadFiles]);
 
+  const handlePathChange = (newPath) => {
+    console.log('Changing path to:', newPath);
+    setCurrentPath(newPath);
+    window.history.pushState({}, '', `?path=${encodeURIComponent(newPath)}`);
+  };
+
   return {
     files,
     currentPath,
@@ -99,6 +105,7 @@ export const useFileManager = () => {
     showFolders,
     extensionFilter,
     handleItemClick,
+    handlePathChange,
     handleFilterClick,
     setDepth,
     setShowFolders,

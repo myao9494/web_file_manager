@@ -51,8 +51,14 @@ export const FileList = ({
                 <Folder />
               </ListItemIcon>
               <ListItemText 
-                primary={item.name}
+                primary={item.relative_path}
                 secondary={`${item.children_count || 0} items`}
+                sx={{ 
+                  paddingLeft: `${item.depth * 20}px`,
+                  '& .MuiListItemText-primary': {
+                    fontFamily: 'monospace'
+                  }
+                }}
               />
             </ListItem>
           ))}
@@ -76,7 +82,15 @@ export const FileList = ({
               <ListItemIcon>
                 <InsertDriveFile />
               </ListItemIcon>
-              <ListItemText primary={item.name} />
+              <ListItemText 
+                primary={item.relative_path}
+                sx={{ 
+                  paddingLeft: `${item.depth * 20}px`,
+                  '& .MuiListItemText-primary': {
+                    fontFamily: 'monospace'
+                  }
+                }}
+              />
             </ListItem>
           ))}
         </>
