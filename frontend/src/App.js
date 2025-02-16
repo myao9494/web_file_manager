@@ -1,6 +1,7 @@
 import React from 'react';
-import { Container, Paper, Typography, Box } from '@mui/material';
+import { Container, Paper, Typography, Box, Divider } from '@mui/material';
 import { useFileManager } from './hooks/useFileManager';
+import { SearchBar } from './components/SearchBar';
 import { FileList } from './components/FileList';
 import { FilterButtons } from './components/FilterButtons';
 import { DepthControl } from './components/DepthControl';
@@ -18,7 +19,8 @@ function App() {
     handleItemClick,
     setDepth,
     setShowFolders,
-    separateItems
+    separateItems,
+    handleSearch
   } = useFileManager();
 
   const { directories, files: fileItems } = separateItems(files);
@@ -29,6 +31,9 @@ function App() {
         <Typography variant="h6" gutterBottom>
           現在のパス: {currentPath}
         </Typography>
+
+        <SearchBar onSearch={handleSearch} />
+        <Divider sx={{ my: 2 }} />
         
         <DepthControl 
           depth={depth} 

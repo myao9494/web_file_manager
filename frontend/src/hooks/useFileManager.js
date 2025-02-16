@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { DEFAULT_PATH, BASE_API_URL } from '../constants/config';
 
@@ -70,6 +70,27 @@ export const useFileManager = () => {
     window.history.pushState({}, '', `?path=${encodeURIComponent(parentPath)}`);
   };
 
+  const handleSearch = useCallback((searchTerm, isRegex) => {
+    if (!searchTerm) {
+      loadFiles();
+      return;
+    }
+
+    let searchRegex;
+    try {
+      searchRegex = isRegex ? new RegExp(searchTerm) : new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    } catch (e) {
+      console.error('Invalid regex pattern:', e);
+      return;
+    }
+
+    setFiles(prevFiles => {
+      return prevFiles.filter(item => {
+        return searchRegex.test(item.name);
+      });
+    });
+  }, [loadFiles]);
+
   return {
     files,
     currentPath,
@@ -82,6 +103,7 @@ export const useFileManager = () => {
     setDepth,
     setShowFolders,
     separateItems,
-    navigateToParent
+    navigateToParent,
+    handleSearch
   };
 };
