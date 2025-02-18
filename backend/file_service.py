@@ -9,7 +9,7 @@ file_service.py
    高速な検索（Everything に近い感覚）を意識して、非同期処理（asyncio と ThreadPoolExecutor）およびキャッシュ（lru_cache）を活用しています。
 """
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import os
 import re
 import fnmatch
@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Optional, List, Set
 from pydantic import BaseModel
+import platform
 
 # 結果のフォーマット（必要に応じて項目を追加）
 class FileInfo(BaseModel):
@@ -91,12 +92,28 @@ def is_ignored(path: Path, project_root: Path) -> bool:
         return False
 
 @lru_cache(maxsize=1000)
+def normalize_path(path_str: str) -> str:
+    """
+    パスを正規化する。Windowsのネットワークパスも適切に処理する。
+    """
+    if platform.system() == 'Windows':
+        # ネットワークパスの場合（\\server\share\path）
+        if path_str.startswith('\\\\'): 
+            return str(PureWindowsPath(path_str))
+        # ローカルパスの場合
+        return str(PureWindowsPath(path_str))
+    return str(Path(path_str))
+
 def get_file_info_cached(path_str: str, project_root: Path, current_depth: int) -> dict:
     """
     ファイル情報の取得をディスクアクセスごとにキャッシュすることで高速化を図る。
     """
-    p = Path(path_str)
+    normalized_path = normalize_path(path_str)
+    p = Path(normalized_path)
     try:
+        # Windowsの場合、project_rootも正規化する
+        normalized_root = normalize_path(str(project_root))
+        project_root = Path(normalized_root)
         rel_path = str(p.relative_to(project_root))
     except ValueError:
         rel_path = p.name

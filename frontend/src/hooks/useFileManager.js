@@ -64,7 +64,25 @@ export const useFileManager = () => {
   };
 
   const navigateToParent = () => {
-    const parentPath = currentPath.split('/').slice(0, -1).join('/');
+    // Windowsのネットワークパス（\\server\share）の場合は特別な処理
+    if (currentPath.startsWith('\\\\')) {
+      const parts = currentPath.split('\\');
+      // ルートの場合は何もしない
+      if (parts.length <= 4) return;
+      const parentPath = parts.slice(0, -1).join('\\');
+      console.log('Moving to parent directory:', parentPath);
+      setCurrentPath(parentPath);
+      window.history.pushState({}, '', `?path=${encodeURIComponent(parentPath)}`);
+      return;
+    }
+
+    // 通常のパス処理
+    const separator = currentPath.includes('\\') ? '\\' : '/';
+    const parentPath = currentPath.split(separator).slice(0, -1).join(separator);
+    if (!parentPath && separator === '\\') {
+      // Windowsのドライブルートの場合は何もしない
+      return;
+    }
     console.log('Moving to parent directory:', parentPath);
     setCurrentPath(parentPath);
     window.history.pushState({}, '', `?path=${encodeURIComponent(parentPath)}`);
