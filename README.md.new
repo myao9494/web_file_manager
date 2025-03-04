@@ -1,19 +1,22 @@
 # ローカルファイル管理システム
 
-ローカルディレクトリをブラウズし、ファイルやフォルダを管理するためのWebアプリケーション。
+パソコンのファイルやフォルダをブラウザから簡単に見たり管理したりできるウェブアプリです。
 
-## 機能
+```mermaid
+graph LR
+    A[ブラウザ] <--> B[ファイル管理アプリ] <--> C[パソコンのファイル]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bfb,stroke:#333,stroke-width:2px
+```
 
-- 📂 ファイル・フォルダの表示と管理
-- 🔍 検索・フィルタリング機能
-- 🖼 画像ファイル管理
-- 📝 外部アプリケーション連携（VS Code, Jupyter Notebook）
+## できること
 
-## 技術スタック
-
-- バックエンド: Python (FastAPI)
-- フロントエンド: React
-- 開発環境: Node.js, Python 3.8+
+- 📂 ファイルやフォルダを見る
+- 🔍 ファイルを名前で検索する
+- 📷 画像ファイルを管理する
+- 💻 VS CodeやJupyter Notebookでファイルを開く
 
 ## 使い方
 

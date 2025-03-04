@@ -23,18 +23,21 @@ export const DepthControl = ({ depth, setDepth, showFolders, setShowFolders }) =
       >
         +
       </IconButton>
-      <Button
-        variant={showFolders ? "contained" : "outlined"}
-        size="small"
-        onClick={() => setShowFolders(prev => !prev)}
-        sx={{
-          marginLeft: 'auto',
-          textTransform: 'none',
-          minWidth: 'auto'
-        }}
-      >
-        {showFolders ? 'フォルダを隠す' : 'フォルダを表示'}
-      </Button>
+      {/* showFoldersとsetShowFoldersがnullでない場合のみボタンを表示 */}
+      {showFolders !== null && setShowFolders !== null && (
+        <Button
+          variant={showFolders ? "contained" : "outlined"}
+          size="small"
+          onClick={() => setShowFolders(prev => !prev)}
+          sx={{
+            marginLeft: 'auto',
+            textTransform: 'none',
+            minWidth: 'auto'
+          }}
+        >
+          {showFolders ? 'フォルダを隠す' : 'フォルダを表示'}
+        </Button>
+      )}
     </Box>
   );
 };

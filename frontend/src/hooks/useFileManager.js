@@ -1,29 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { DEFAULT_PATH, BASE_API_URL } from '../constants/config';
+import { useConfig } from './useConfig';
 
 export const useFileManager = () => {
+  const { config, loading: configLoading } = useConfig();
   const [files, setFiles] = useState([]);
-  const [currentPath, setCurrentPath] = useState(DEFAULT_PATH);
+  const [currentPath, setCurrentPath] = useState('');
   const [depth, setDepth] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showFolders, setShowFolders] = useState(true);
   const [extensionFilter, setExtensionFilter] = useState('');
 
   useEffect(() => {
+    if (configLoading || !config.defaultPath) return;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const pathFromUrl = urlParams.get('path');
     
     if (pathFromUrl) {
       console.log('Path from URL:', pathFromUrl);
       setCurrentPath(pathFromUrl);
+      
+      // URLパラメータを更新
+      urlParams.set('path', pathFromUrl);
+      window.history.pushState({}, '', `?${urlParams.toString()}`);
     } else {
-      console.log('No path specified in URL, using default path:', currentPath);
+      console.log('No path specified in URL, using default path:', config.defaultPath);
+      setCurrentPath(config.defaultPath);
     }
-  }, []);
+  }, [config.defaultPath, configLoading]);
 
   useEffect(() => {
-    loadFiles();
+    if (currentPath) {
+      loadFiles();
+    }
   }, [currentPath, depth, extensionFilter]);
 
   const loadFiles = async () => {
@@ -31,7 +41,7 @@ export const useFileManager = () => {
       console.log('Loading files from:', currentPath);
       setLoading(true);
       const response = await axios.get(
-        `${BASE_API_URL}/view_file?file_path=${encodeURIComponent(currentPath)}&depth=${depth}&extensions=${encodeURIComponent(extensionFilter)}`
+        `${config.apiUrl}/view_file?file_path=${encodeURIComponent(currentPath)}&depth=${depth}&extensions=${encodeURIComponent(extensionFilter)}`
       );
       setLoading(false);
       console.log('Files loaded:', response.data);

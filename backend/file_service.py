@@ -20,6 +20,7 @@ from functools import lru_cache
 from typing import Optional, List, Set
 from pydantic import BaseModel
 import platform
+from urllib.parse import unquote
 
 # 結果のフォーマット（必要に応じて項目を追加）
 class FileInfo(BaseModel):
@@ -95,14 +96,27 @@ def is_ignored(path: Path, project_root: Path) -> bool:
 def normalize_path(path_str: str) -> str:
     """
     パスを正規化する。Windowsのネットワークパスも適切に処理する。
+    URLエンコードされたパスもデコードする。
     """
+    # URLエンコードされたパスをデコード
+    if '%' in path_str:
+        try:
+            path_str = unquote(path_str)
+        except Exception as e:
+            logging.error(f"URLデコードエラー: {e}")
+    
     if platform.system() == 'Windows':
         # ネットワークパスの場合（\\server\share\path）
         if path_str.startswith('\\\\'): 
             return str(PureWindowsPath(path_str))
+        # スラッシュをバックスラッシュに変換
+        path_str = path_str.replace('/', '\\')
         # ローカルパスの場合
         return str(PureWindowsPath(path_str))
-    return str(Path(path_str))
+    else:
+        # Unixシステムの場合はバックスラッシュをスラッシュに変換
+        path_str = path_str.replace('\\', '/')
+        return str(Path(path_str))
 
 def get_file_info_cached(path_str: str, project_root: Path, current_depth: int) -> dict:
     """
@@ -118,14 +132,24 @@ def get_file_info_cached(path_str: str, project_root: Path, current_depth: int) 
     except ValueError:
         rel_path = p.name
     
+    try:
+        is_dir = p.is_dir()
+        size = os.path.getsize(p) if p.is_file() else None
+        children_count = len(list(p.iterdir())) if is_dir else None
+    except (PermissionError, FileNotFoundError) as e:
+        logging.error(f"ファイル情報取得エラー: {p} - {e}")
+        is_dir = False
+        size = None
+        children_count = None
+    
     info = {
         "name": p.name,
         "path": str(p),
         "relative_path": rel_path,
         "depth": current_depth,
-        "is_dir": p.is_dir(),
-        "size": os.path.getsize(p) if p.is_file() else None,
-        "children_count": len(list(p.iterdir())) if p.is_dir() else None
+        "is_dir": is_dir,
+        "size": size,
+        "children_count": children_count
     }
     return info
 
@@ -217,7 +241,7 @@ async def retrieve_files(root_path: Path, depth: int = 1, extensions: str = "") 
                 ext = root_path.suffix.lower().lstrip('.')
                 if ext not in ext_filter:
                     return []  # フィルタに合致しない場合は空リスト
-            info = get_file_info_cached(str(root_path))
+            info = get_file_info_cached(str(root_path), project_root, 1)
             return [FileInfo(**info)]
         except Exception as e:
             logging.error(f"retrieve_files でエラー: {root_path} - {e}")

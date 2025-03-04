@@ -25,10 +25,10 @@ from file_service import retrieve_files, FileInfo
 
 app = FastAPI(title="ローカルファイル管理システム")
 
-# CORS 設定（必要に応じオリジンを変更）
+# CORS 設定（開発環境では全オリジンを許可）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],  # 開発環境では全てのオリジンを許可
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,6 +44,10 @@ class CreateFolderRequest(BaseModel):
 
 class DeleteItemsRequest(BaseModel):
     paths: List[str]
+
+class MoveItemRequest(BaseModel):
+    source_path: str
+    destination_path: str
 
 # view_file 用キャッシュ設定
 file_cache: dict = {}
@@ -162,6 +166,52 @@ async def open_jupyter(file_path: str):
     try:
         subprocess.Popen(["jupyter", "notebook", file_path])
         return {"message": "Jupyter Notebook でオープンしました"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/move-item")
+async def move_item(request: MoveItemRequest):
+    """
+    ファイルまたはフォルダを指定された場所に移動します。
+    """
+    try:
+        source_path = Path(request.source_path)
+        destination_path = Path(request.destination_path)
+        
+        if not source_path.exists():
+            raise HTTPException(status_code=404, detail="移動元のパスが存在しません")
+            
+        # 移動先がディレクトリの場合は、そのディレクトリ内に移動
+        if destination_path.is_dir():
+            final_path = destination_path / source_path.name
+        else:
+            final_path = destination_path
+            
+        # 移動先に同名のファイルが存在する場合はエラー
+        if final_path.exists():
+            raise HTTPException(status_code=409, detail="移動先に同名のファイルが既に存在します")
+            
+        # 移動処理
+        shutil.move(str(source_path), str(final_path))
+        
+        # 移動元と移動先のキャッシュをクリア
+        source_dir = str(source_path.parent)
+        dest_dir = str(destination_path if destination_path.is_dir() else destination_path.parent)
+        
+        # 関連するキャッシュを削除
+        keys_to_remove = []
+        for cache_key in file_cache.keys():
+            path_part = cache_key.split(':', 1)[0]
+            if path_part.startswith(source_dir) or path_part.startswith(dest_dir):
+                keys_to_remove.append(cache_key)
+        
+        # キャッシュから削除
+        for key in keys_to_remove:
+            file_cache.pop(key, None)
+            
+        return {"message": "ファイルを移動しました", "new_path": str(final_path)}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
